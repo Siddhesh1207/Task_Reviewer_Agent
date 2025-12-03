@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskLoop AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); margin: 0; color: var(--text-main); }
+        
+        /* --- Layout --- */
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; }
+        
+        /* --- Cards --- */
+        .card { background: var(--card-bg); border-radius: 12px; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        
+        /* --- Forms --- */
+        input, textarea, select {
+            width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;
+            margin-bottom: 1rem; font-family: inherit; font-size: 0.95rem; box-sizing: border-box;
+        }
+        input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+        button {
+            background-color: var(--primary); color: white; border: none; padding: 0.75rem 1.5rem;
+            border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%;
+        }
+        button:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+        button.secondary { background-color: transparent; color: var(--text-sub); border: 1px solid var(--border); }
+        button.secondary:hover { background-color: var(--bg-color); color: var(--text-main); }
+
+        /* --- Views Management --- */
+        .view { display: none; }
+        .view.active { display: block; animation: fadeUpdate 0.3s ease-out; }
+        @keyframes fadeUpdate { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Login Split --- */
+        .login-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 900px; margin: 4rem auto; }
+        .login-box { text-align: center; }
+        .login-box h2 { color: var(--primary); }
+        
+        /* --- Dashboard Grid --- */
+        .dashboard-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; }
+        .sidebar { background: #1e293b; color: white; padding: 1.5rem; border-radius: 12px; height: fit-content; }
+        .sidebar h3 { color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0; }
+        .nav-item { display: block; padding: 0.75rem 1rem; color: #cbd5e1; text-decoration: none; border-radius: 6px; cursor: pointer; margin-bottom: 0.5rem; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+
+        /* --- List Items --- */
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+        .list-item:hover { background-color: var(--bg-color); }
+        .list-item:last-child { border-bottom: none; }
+        .tag { padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+        .tag.pending { background: #fef3c7; color: #b45309; }
+        .tag.done { background: #d1fae5; color: #047857; }
+        
+        /* --- Utilities --- */
+        .hidden { display: none !important; }
+        .score-badge { font-size: 2rem; font-weight: 700; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div id="view-login" class="container view active">
+        <div style="text-align:center; margin-bottom: 3rem;">
+            <h1 class="logo" style="justify-content: center;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
+                TaskLoop AI
+            </h1>
+            <p style="color: var(--text-sub);">Advanced AI Task Review & Mentorship Platform</p>
+        </div>
+
+        <div class="login-grid">
+            <div class="card login-box">
+                <h2>Student Portal</h2>
+                <p style="color:var(--text-sub); margin-bottom:1.5rem">Enter your teacher's ID to access class tasks.</p>
+                <form id="form-student-login">
+                    <input type="text" id="login-student-teacher" placeholder="Teacher's Username (e.g. mr_smith)" required>
+                    <input type="text" id="login-student-username" placeholder="Your Name" required>
+                    <button type="submit">Enter Classroom</button>
+                </form>
+            </div>
+
+            <div class="card login-box">
+                <h2>Teacher Admin</h2>
+                <div id="teacher-auth-forms">
+                    <form id="form-teacher-login">
+                        <input type="text" id="login-teacher-user" placeholder="Username" required>
+                        <input type="password" id="login-teacher-pass" placeholder="Password" required>
+                        <button type="submit">Login</button>
+                        <p style="font-size:0.9rem; margin-top:1rem; cursor:pointer; color:var(--primary)" onclick="toggleTeacherMode('register')">New Teacher? Create Account</p>
+                    </form>
+                    
+                    <form id="form-teacher-register" class="hidden">
+                        <input type="text" id="reg-teacher-user" placeholder="Choose Username" required>
+                        <input type="password" id="reg-teacher-pass" placeholder="Choose Password" required>
+                        <button type="submit" style="background-color: var(--text-main)">Register & Login</button>
+                        <p style="font-size:0.9rem; margin-top:1rem; cursor:pointer; color:var(--primary)" onclick="toggleTeacherMode('login')">Already have an account? Login</p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-teacher" class="view">
+        <div class="header container">
+            <div class="logo">TaskLoop AI <span style="font-weight:300; color:var(--text-sub)">| Teacher</span></div>
+            <button class="secondary" style="width:auto" onclick="logout()">Logout</button>
+        </div>
+        <div class="container dashboard-grid">
+            <aside class="sidebar">
+                <h3>Menu</h3>
+                <a class="nav-item active" onclick="showTeacherSection('pending')">Pending Reviews</a>
+                <a class="nav-item" onclick="showTeacherSection('create')">Create New Task</a>
+                <div style="margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1)">
+                    <small>Logged in as: <b id="display-teacher-name"></b></small>
+                </div>
+            </aside>
+            <main id="teacher-main">
+                <div id="teacher-section-pending" class="card">
+                    <h2>Pending Student Reviews</h2>
+                    <div id="teacher-review-list">Loading...</div>
+                </div>
+
+                <div id="teacher-section-create" class="card hidden">
+                    <h2>Create New Assignment</h2>
+                    <form id="form-create-task">
+                        <label>Task ID (Unique)</label>
+                        <input type="text" id="new-task-id" placeholder="e.g. py-101-loops" required>
+                        <label>Title</label>
+                        <input type="text" id="new-task-title" placeholder="e.g. Python Loop Basics" required>
+                        <label>Description (AI Prompts against this)</label>
+                        <textarea id="new-task-desc" rows="6" placeholder="Describe what the code should do..." required></textarea>
+                        <button type="submit">Publish Task</button>
+                    </form>
+                </div>
+
+                <div id="teacher-review-detail" class="card hidden"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="view-student" class="view">
+        <div class="header container">
+            <div class="logo">TaskLoop AI <span style="font-weight:300; color:var(--text-sub)">| Student</span></div>
+            <button class="secondary" style="width:auto" onclick="logout()">Exit Class</button>
+        </div>
+        <div class="container dashboard-grid">
+            <aside class="sidebar">
+                <h3>Classroom: <span id="classroom-name" style="color:white"></span></h3>
+                <a class="nav-item active" onclick="showStudentSection('tasks')">Available Tasks</a>
+                <a class="nav-item" onclick="showStudentSection('history')">My History</a>
+                <div style="margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1)">
+                    <small>Student: <b id="display-student-name"></b></small>
+                </div>
+            </aside>
+            <main id="student-main">
+                <div id="student-section-tasks" class="card">
+                    <h2>Assignments</h2>
+                    <div id="student-task-list">Loading...</div>
+                </div>
+                
+                <div id="student-section-history" class="card hidden">
+                    <h2>Submission History</h2>
+                    <div id="student-history-list">Loading...</div>
+                </div>
+
+                <div id="student-submission-panel" class="card hidden"></div>
+                
+                <div id="student-result-panel" class="card hidden"></div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION
+        const API_URL = "https://siddhesh1207-taskloopai.hf.space"; 
+        const API_KEY = "12345678";
+        
+        // STATE
+        let currentUser = null;
+        let currentRole = null; // 'teacher' or 'student'
+        let currentTeacherContext = null; // For students, who is their teacher?
+
+        // --- AUTH FUNCTIONS ---
+        function toggleTeacherMode(mode) {
+            document.getElementById('form-teacher-login').classList.toggle('hidden', mode === 'register');
+            document.getElementById('form-teacher-register').classList.toggle('hidden', mode === 'login');
+        }
+
+        async function apiCall(endpoint, method="GET", body=null) {
+            const headers = { 'Content-Type': 'application/json', 'X-API-Key': API_KEY };
+            const config = { method, headers };
+            if (body) config.body = JSON.stringify(body);
+            
+            try {
+                const res = await fetch(`${API_URL}${endpoint}`, config);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || "API Error");
+                return data;
+            } catch (e) {
+                alert(e.message);
+                throw e;
+            }
+        }
+
+        // --- LOGIN HANDLERS ---
+        document.getElementById('form-teacher-login').onsubmit = async (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login-teacher-user').value;
+            const p = document.getElementById('login-teacher-pass').value;
+            await apiCall('/auth/teacher/login', 'POST', { username: u, password: p });
+            loginSuccess(u, 'teacher');
+        };
+
+        document.getElementById('form-teacher-register').onsubmit = async (e) => {
+            e.preventDefault();
+            const u = document.getElementById('reg-teacher-user').value;
+            const p = document.getElementById('reg-teacher-pass').value;
+            await apiCall('/auth/teacher/register', 'POST', { username: u, password: p });
+            loginSuccess(u, 'teacher');
+        };
+
+        document.getElementById('form-student-login').onsubmit = async (e) => {
+            e.preventDefault();
+            const t = document.getElementById('login-student-teacher').value;
+            const s = document.getElementById('login-student-username').value;
+            // Verify teacher exists first
+            await apiCall(`/auth/check-teacher/${t}`);
+            currentTeacherContext = t;
+            loginSuccess(s, 'student');
+        };
+
+        function loginSuccess(username, role) {
+            currentUser = username;
+            currentRole = role;
+            
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            
+            if (role === 'teacher') {
+                document.getElementById('view-teacher').classList.add('active');
+                document.getElementById('display-teacher-name').innerText = username;
+                loadTeacherPending();
+            } else {
+                document.getElementById('view-student').classList.add('active');
+                document.getElementById('display-student-name').innerText = username;
+                document.getElementById('classroom-name').innerText = currentTeacherContext;
+                loadStudentTasks();
+            }
+        }
+
+        function logout() {
+            location.reload();
+        }
+
+        // --- TEACHER LOGIC ---
+        function showTeacherSection(sec) {
+            document.getElementById('teacher-section-pending').classList.toggle('hidden', sec !== 'pending');
+            document.getElementById('teacher-section-create').classList.toggle('hidden', sec !== 'create');
+            document.getElementById('teacher-review-detail').classList.add('hidden');
+            if (sec === 'pending') loadTeacherPending();
+        }
+
+        async function loadTeacherPending() {
+            const list = document.getElementById('teacher-review-list');
+            list.innerHTML = "Loading...";
+            const reviews = await apiCall(`/reviews/teacher/${currentUser}`);
+            
+            if (reviews.length === 0) { list.innerHTML = "<p>No pending reviews.</p>"; return; }
+            
+            list.innerHTML = "";
+            reviews.forEach(r => {
+                const div = document.createElement('div');
+                div.className = "list-item";
+                div.innerHTML = `
+                    <div>
+                        <strong>${r.task_id}</strong>
+                        <div style="color:var(--text-sub); font-size:0.9em">Student: ${r.student_username}</div>
+                    </div>
+                    <div class="tag pending">Pending Review</div>
+                `;
+                div.onclick = () => openAdminReview(r);
+                list.appendChild(div);
+            });
+        }
+
+        document.getElementById('form-create-task').onsubmit = async (e) => {
+            e.preventDefault();
+            const body = {
+                task_id: document.getElementById('new-task-id').value,
+                title: document.getElementById('new-task-title').value,
+                description: document.getElementById('new-task-desc').value,
+                teacher_username: currentUser
+            };
+            await apiCall('/tasks', 'POST', body);
+            alert("Task Created!");
+            document.getElementById('form-create-task').reset();
+        };
+
+        function openAdminReview(review) {
+            document.getElementById('teacher-section-pending').classList.add('hidden');
+            const panel = document.getElementById('teacher-review-detail');
+            panel.classList.remove('hidden');
+            
+            panel.innerHTML = `
+                <button class="secondary" onclick="showTeacherSection('pending')" style="margin-bottom:1rem">← Back</button>
+                <h2>Reviewing: ${review.student_username}</h2>
+                <div style="background:#f1f5f9; padding:1rem; border-radius:8px; margin-bottom:1rem">
+                    <strong>AI Score:</strong> ${review.review_data.score}/10<br>
+                    <strong>Good:</strong> ${review.review_data.done_well}<br>
+                    <strong>Missing:</strong> ${review.review_data.missing}
+                </div>
+                <h3>Provide DHI Feedback</h3>
+                <form id="dhi-form">
+                    <label>Dignity (1-10)</label><input type="number" id="score-d" min="1" max="10" required>
+                    <label>Honesty (1-10)</label><input type="number" id="score-h" min="1" max="10" required>
+                    <label>Integrity (1-10)</label><input type="number" id="score-i" min="1" max="10" required>
+                    <button type="submit">Submit Final Grade</button>
+                </form>
+            `;
+
+            document.getElementById('dhi-form').onsubmit = async (e) => {
+                e.preventDefault();
+                const dhi = {
+                    dignity: parseInt(document.getElementById('score-d').value),
+                    honesty: parseInt(document.getElementById('score-h').value),
+                    integrity: parseInt(document.getElementById('score-i').value)
+                };
+                await apiCall(`/admin/feedback/${review.review_id}`, 'POST', { sentiment: 'positive', dhi_scores: dhi });
+                alert("Feedback Submitted");
+                showTeacherSection('pending');
+            };
+        }
+
+        // --- STUDENT LOGIC ---
+        function showStudentSection(sec) {
+            document.getElementById('student-section-tasks').classList.toggle('hidden', sec !== 'tasks');
+            document.getElementById('student-section-history').classList.toggle('hidden', sec !== 'history');
+            document.getElementById('student-submission-panel').classList.add('hidden');
+            document.getElementById('student-result-panel').classList.add('hidden');
+            if (sec === 'tasks') loadStudentTasks();
+            if (sec === 'history') loadStudentHistory();
+        }
+
+        async function loadStudentTasks() {
+            const list = document.getElementById('student-task-list');
+            list.innerHTML = "Fetching tasks...";
+            const tasks = await apiCall(`/tasks/${currentTeacherContext}`);
+            
+            if (tasks.length === 0) { list.innerHTML = "<p>No tasks assigned by this teacher yet.</p>"; return; }
+            
+            list.innerHTML = "";
+            tasks.forEach(t => {
+                const div = document.createElement('div');
+                div.className = "list-item";
+                div.innerHTML = `<strong>${t.title}</strong> <span>${t.task_id}</span>`;
+                div.onclick = () => openSubmissionForm(t);
+                list.appendChild(div);
+            });
+        }
+        
+        async function loadStudentHistory() {
+             const list = document.getElementById('student-history-list');
+             list.innerHTML = "Loading...";
+             const reviews = await apiCall(`/reviews/student/${currentTeacherContext}/${currentUser}`);
+             list.innerHTML = "";
+             reviews.forEach(r => {
+                 const statusClass = r.status === 'pending_feedback' ? 'pending' : 'done';
+                 const div = document.createElement('div');
+                 div.className = "list-item";
+                 div.innerHTML = `
+                    <div><strong>${r.task_id}</strong></div>
+                    <div class="tag ${statusClass}">${r.status.replace('_', ' ')}</div>
+                 `;
+                 div.onclick = () => showResultPanel(r);
+                 list.appendChild(div);
+             });
+        }
+
+        function openSubmissionForm(task) {
+            document.getElementById('student-section-tasks').classList.add('hidden');
+            const panel = document.getElementById('student-submission-panel');
+            panel.classList.remove('hidden');
+            
+            panel.innerHTML = `
+                <button class="secondary" onclick="showStudentSection('tasks')" style="margin-bottom:1rem">Cancel</button>
+                <h2>Submit: ${task.title}</h2>
+                <p>${task.description}</p>
+                <textarea id="sub-text" placeholder="Paste your code solution here..." rows="10"></textarea>
+                <button onclick="submitTask('${task.task_id}')">Submit for Review</button>
+            `;
+        }
+
+        async function submitTask(taskId) {
+            const text = document.getElementById('sub-text').value;
+            if (!text) return alert("Please enter code");
+            
+            document.querySelector('#student-submission-panel button').innerText = "Analyzing...";
+            const res = await apiCall(`/review/text/${currentTeacherContext}/${currentUser}/${taskId}`, 'POST', { submission_text: text });
+            
+            showResultPanel(res);
+        }
+
+        function showResultPanel(review) {
+            document.querySelectorAll('#student-main > div').forEach(d => d.classList.add('hidden'));
+            const panel = document.getElementById('student-result-panel');
+            panel.classList.remove('hidden');
+
+            let nextTaskHtml = '';
+            if (review.status === 'feedback_provided' && !review.next_task.title) {
+                nextTaskHtml = `<button onclick="generateNext('${review.review_id}')">Generate Next Challenge</button>`;
+            } else if (review.next_task.title) {
+                nextTaskHtml = `
+                    <div style="background:#dcfce7; padding:1rem; border-radius:8px; margin-top:1rem; border:1px solid #86efac">
+                        <h3 style="color:#166534">Next Challenge: ${review.next_task.title}</h3>
+                        <ul>${review.next_task.objectives.map(o => `<li>${o}</li>`).join('')}</ul>
+                    </div>`;
+            } else {
+                nextTaskHtml = `<p style="color:#b45309; background:#fef3c7; padding:0.5rem; border-radius:4px">Waiting for Teacher Feedback...</p>`;
+            }
+
+            panel.innerHTML = `
+                <button class="secondary" onclick="showStudentSection('tasks')" style="margin-bottom:1rem">Close</button>
+                <h2>Result: ${review.task_id}</h2>
+                <div class="score-badge">${review.review_data.score}/10</div>
+                <p><strong>AI Feedback:</strong> ${review.feedback_note}</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0">
+                    <div style="background:#f0fdf4; padding:1rem; border-radius:8px">
+                        <strong>Good:</strong><br>${review.review_data.done_well.join(', ')}
+                    </div>
+                    <div style="background:#fef2f2; padding:1rem; border-radius:8px">
+                        <strong>Improve:</strong><br>${review.review_data.missing.join(', ')}
+                    </div>
+                </div>
+                ${nextTaskHtml}
+            `;
+        }
+        
+        async function generateNext(reviewId) {
+            await apiCall(`/student/generate-next/${reviewId}`, 'POST');
+            const updated = await apiCall(`/review/${reviewId}`); // Fetch fresh data
+            showResultPanel(updated);
+        }
+    </script>
+</body>
+</html>
